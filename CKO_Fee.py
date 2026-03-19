@@ -9,6 +9,10 @@ st.set_page_config(page_title="Fee Analysis Dashboard", layout="wide")
 def load_data(file_path):
     df = pd.read_csv(file_path, low_memory=False)
     
+    # Exclude specific payment methods
+    excluded_methods = ['AMEX', 'UNIONPAYINTERNATIONAL']
+    df = df[~df['Payment Method'].isin(excluded_methods)]
+    
     # Fill NA in key categorical columns
     cat_cols = ['Payment Method', 'Card Type', 'Region', 'Processing Channel Name', 'Card Category', 'Action Type']
     for col in cat_cols:
@@ -39,19 +43,32 @@ except FileNotFoundError:
 # --- Sidebar Filters ---
 st.sidebar.header("Data Filters")
 
-# Multiselects for various dimensions
-selected_schemes = st.sidebar.multiselect("Card Scheme (Payment Method)", options=df['Payment Method'].unique(), default=df['Payment Method'].unique())
-selected_card_types = st.sidebar.multiselect("Card Type", options=df['Card Type'].unique(), default=df['Card Type'].unique())
-selected_regions = st.sidebar.multiselect("Regionality", options=df['Region'].unique(), default=df['Region'].unique())
-selected_channels = st.sidebar.multiselect("Vertical (Channel)", options=df['Processing Channel Name'].unique(), default=df['Processing Channel Name'].unique())
+# Helper function to create dropdown options with "All" at the top
+def get_dropdown_options(series):
+    return ["All"] + sorted(series.unique().tolist())
+
+# Single-value dropdowns (selectboxes)
+selected_scheme = st.sidebar.selectbox("Card Scheme (Payment Method)", options=get_dropdown_options(df['Payment Method']))
+selected_card_type = st.sidebar.selectbox("Card Type", options=get_dropdown_options(df['Card Type']))
+selected_region = st.sidebar.selectbox("Regionality", options=get_dropdown_options(df['Region']))
+selected_channel = st.sidebar.selectbox("Vertical (Channel)", options=get_dropdown_options(df['Processing Channel Name']))
 
 # --- Apply Filters ---
-filtered_df = df[
-    (df['Payment Method'].isin(selected_schemes)) &
-    (df['Card Type'].isin(selected_card_types)) &
-    (df['Region'].isin(selected_regions)) &
-    (df['Processing Channel Name'].isin(selected_channels))
-]
+# Start with the full (already AMEX/UnionPay excluded) dataframe
+filtered_df = df.copy()
+
+# Filter each column only if the user hasn't selected "All"
+if selected_scheme != "All":
+    filtered_df = filtered_df[filtered_df['Payment Method'] == selected_scheme]
+
+if selected_card_type != "All":
+    filtered_df = filtered_df[filtered_df['Card Type'] == selected_card_type]
+
+if selected_region != "All":
+    filtered_df = filtered_df[filtered_df['Region'] == selected_region]
+
+if selected_channel != "All":
+    filtered_df = filtered_df[filtered_df['Processing Channel Name'] == selected_channel]
 
 # --- KPIs ---
 st.title("💸 Payment Fee Analysis & GMV Dashboard")

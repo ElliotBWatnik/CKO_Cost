@@ -123,15 +123,41 @@ mc_share = (mc_gmv / total_gmv * 100) if total_gmv > 0 else 0
 visa_cost_pct = (visa_fees / visa_gmv * 100) if visa_gmv > 0 else 0
 mc_cost_pct = (mc_fees / mc_gmv * 100) if mc_gmv > 0 else 0
 
+# Calculate sub-breakdown percentages
+def get_fee_breakdown(df_sub, gmv):
+    bd = {'Interchange': 0.0, 'Scheme': 0.0, 'Gateway': 0.0, 'Premium': 0.0}
+    if gmv > 0 and not df_sub.empty:
+        grouped = df_sub.groupby('Fee Category')['Absolute Fee Cost'].sum()
+        for k in bd.keys():
+            bd[k] = (grouped.get(k, 0) / gmv) * 100
+    return bd
+
+visa_bd = get_fee_breakdown(visa_df, visa_gmv)
+mc_bd = get_fee_breakdown(mc_df, mc_gmv)
+
 # Display Metrics
 hc1, hc2 = st.columns(2)
 with hc1:
     st.metric("VISA Overall GMV", f"{visa_gmv:,.2f}", f"{visa_share:.2f}% Share of Total GMV", delta_color="off")
     st.metric("VISA Overall Cost %", f"{visa_cost_pct:.4f}%")
+    st.markdown(f'''
+    <div style="font-size: 0.9em; color: #555; background-color: #f9f9f9; padding: 10px; border-radius: 5px;">
+        <b>Breakdown % of GMV:</b><br>
+        💳 Interchange: {visa_bd['Interchange']:.4f}% &nbsp;|&nbsp; 🏛 Scheme: {visa_bd['Scheme']:.4f}%<br>
+        🌐 Gateway: {visa_bd['Gateway']:.4f}% &nbsp;|&nbsp; ⭐ Premium: {visa_bd['Premium']:.4f}%
+    </div>
+    ''', unsafe_allow_html=True)
 
 with hc2:
     st.metric("MASTERCARD Overall GMV", f"{mc_gmv:,.2f}", f"{mc_share:.2f}% Share of Total GMV", delta_color="off")
     st.metric("MASTERCARD Overall Cost %", f"{mc_cost_pct:.4f}%")
+    st.markdown(f'''
+    <div style="font-size: 0.9em; color: #555; background-color: #f9f9f9; padding: 10px; border-radius: 5px;">
+        <b>Breakdown % of GMV:</b><br>
+        💳 Interchange: {mc_bd['Interchange']:.4f}% &nbsp;|&nbsp; 🏛 Scheme: {mc_bd['Scheme']:.4f}%<br>
+        🌐 Gateway: {mc_bd['Gateway']:.4f}% &nbsp;|&nbsp; ⭐ Premium: {mc_bd['Premium']:.4f}%
+    </div>
+    ''', unsafe_allow_html=True)
 
 st.markdown("---")
 

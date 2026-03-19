@@ -54,6 +54,15 @@ except Exception as e:
     st.error(f"Error loading the file: {e}")
     st.stop()
 
+# --- Display Date Range ---
+if 'Reporting Start Date' in df.columns and 'Reporting End Date' in df.columns:
+    try:
+        min_date = pd.to_datetime(df['Reporting Start Date']).min().strftime('%b %d, %Y')
+        max_date = pd.to_datetime(df['Reporting End Date']).max().strftime('%b %d, %Y')
+        st.caption(f"📅 **Data Range extracted from upload:** {min_date} to {max_date}")
+    except Exception:
+        pass
+
 # --- Sidebar Filters ---
 st.sidebar.header("Data Filters")
 
